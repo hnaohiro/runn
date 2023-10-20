@@ -137,6 +137,15 @@ func fetchPath(path string) (string, error) {
 	return paths[0], nil
 }
 
+// fileExists checks if the file exists.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil
+}
+
 // readFile reads single file from local or cache.
 // When retrieving a cache file, if the cache file does not exist, re-fetch it.
 func readFile(p string) ([]byte, error) {

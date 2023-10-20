@@ -168,6 +168,7 @@ func TestRequestBodyForMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tooLongText := strings.Repeat("too-long-text", 100)
 
 	multitests := []struct {
 		in                     string
@@ -229,6 +230,20 @@ file:
 				"--123456789012345678901234567890abcdefghijklmnopqrstuvwxyz\r\n",
 				"Content-Disposition: form-data; name=\"file\"; filename=\"dummy.png\"\r\nContent-Type: image/png\r\n\r\n" + string(dummy0),
 				"Content-Disposition: form-data; name=\"file\"; filename=\"dummy.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n" + string(dummy1),
+			},
+			"multipart/form-data; boundary=123456789012345678901234567890abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			fmt.Sprintf(`
+- upload0: 'testdata/dummy.png'
+- upload1: 'testdata/dummy.jpg'
+- name: '%s'`, tooLongText),
+			MediaTypeMultipartFormData,
+			[]string{
+				"--123456789012345678901234567890abcdefghijklmnopqrstuvwxyz\r\n",
+				"Content-Disposition: form-data; name=\"upload0\"; filename=\"dummy.png\"\r\nContent-Type: image/png\r\n\r\n" + string(dummy0),
+				"Content-Disposition: form-data; name=\"upload1\"; filename=\"dummy.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n" + string(dummy1),
+				fmt.Sprintf("Content-Disposition: form-data; name=\"name\"\r\n\r\n%s", tooLongText),
 			},
 			"multipart/form-data; boundary=123456789012345678901234567890abcdefghijklmnopqrstuvwxyz",
 		},

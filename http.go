@@ -14,7 +14,6 @@ import (
 	"net/http/httptest"
 	"net/textproto"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -209,20 +208,22 @@ func (r *httpRequest) encodeMultipart() (io.Reader, error) {
 			default:
 				return nil, fmt.Errorf("invalid body: %v", r.body)
 			}
-			b, err := readFile(filepath.Join(r.root, fileName))
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return nil, err
-			}
+			var b []byte
 			h := make(textproto.MIMEHeader)
-			if errors.Is(err, os.ErrNotExist) {
-				// not file
-				b = []byte(fileName)
-				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"`, quoteEscaper.Replace(k))) //nostyle:useq FIXME
-			} else {
+			if fileExists(filepath.Join(r.root, fileName)) {
 				// file
+				content, err := readFile(filepath.Join(r.root, fileName))
+				if err != nil {
+					return nil, err
+				}
+				b = content
 				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, //nostyle:useq FIXME
 					quoteEscaper.Replace(k), quoteEscaper.Replace(filepath.Base(fileName))))
 				h.Set("Content-Type", http.DetectContentType(b))
+			} else {
+				// not file
+				b = []byte(fileName)
+				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"`, quoteEscaper.Replace(k))) //nostyle:useq FIXME
 			}
 			fw, err := mw.CreatePart(h)
 			if err != nil {
